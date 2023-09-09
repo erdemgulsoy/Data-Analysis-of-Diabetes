@@ -7,7 +7,7 @@ import missingno as msno
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder, StandardScaler, RobustScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, recall_score, precision_score
 from sklearn.ensemble import RandomForestClassifier
 
 pd.set_option("display.max_columns", None)
@@ -237,18 +237,40 @@ df = pd.DataFrame(scaler.inverse_transform(df), columns=df.columns)
 #################################################
 #################################################
 
-# Değişken Türetelim ;
-df.loc[(df["BMI"] > 10) & (df["BMI"] <= 20), "NEW_BMI_CAT"] = "underweight"
-df.loc[(df["BMI"] > 20) & (df["BMI"] <= 25), "NEW_BMI_CAT"] = "healthly"
-df.loc[(df["BMI"] > 25) & (df["BMI"] <= 30), "NEW_BMI_CAT"] = "overweight"
-df.loc[(df["BMI"] > 30) & (df["BMI"] <= 40), "NEW_BMI_CAT"] = "obese"
-df.loc[(df["BMI"] > 40) & (df["BMI"] <= 60), "NEW_BMI_CAT"] = "very_obese"
+# # Yaş ve beden kitle indeksini bir arada düşünerek kategorik değişken oluşturma 3 kırılım yakalandı
+df.loc[(df["BMI"] < 18.5) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BMI_NOM"] = "underweightmature"
+df.loc[(df["BMI"] < 18.5) & (df["Age"] >= 50), "NEW_AGE_BMI_NOM"] = "underweightsenior"
+df.loc[((df["BMI"] >= 18.5) & (df["BMI"] < 25)) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BMI_NOM"] = "healthymature"
+df.loc[((df["BMI"] >= 18.5) & (df["BMI"] < 25)) & (df["Age"] >= 50), "NEW_AGE_BMI_NOM"] = "healthysenior"
+df.loc[((df["BMI"] >= 25) & (df["BMI"] < 30)) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BMI_NOM"] = "overweightmature"
+df.loc[((df["BMI"] >= 25) & (df["BMI"] < 30)) & (df["Age"] >= 50), "NEW_AGE_BMI_NOM"] = "overweightsenior"
+df.loc[(df["BMI"] > 30) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BMI_NOM"] = "obesemature"
+df.loc[(df["BMI"] > 30) & (df["Age"] >= 50), "NEW_AGE_BMI_NOM"] = "obesesenior"
 
-df.loc[(df["BloodPressure"] < 60), "NEW_PRESS_CAT"] = "low"
-df.loc[(df["BloodPressure"] >= 60) & (df["BloodPressure"] < 80), "NEW_PRESS_CAT"] = "optimal"
-df.loc[(df["BloodPressure"] >= 80) & (df["BloodPressure"] < 90), "NEW_PRESS_CAT"] = "normal"
-df.loc[(df["BloodPressure"] >= 90) & (df["BloodPressure"] < 110), "NEW_PRESS_CAT"] = "high"
-df.loc[(df["BloodPressure"] >= 110), "NEW_PRESS_CAT"] = "very_high"
+# Yaş ve Glikoz değerlerini bir arada düşünerek kategorik değişken oluşturma
+df.loc[(df["Glucose"] < 70) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_GLUCOSE_NOM"] = "lowmature"
+df.loc[(df["Glucose"] < 70) & (df["Age"] >= 50), "NEW_AGE_GLUCOSE_NOM"] = "lowsenior"
+df.loc[((df["Glucose"] >= 70) & (df["Glucose"] < 100)) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_GLUCOSE_NOM"] = "normalmature"
+df.loc[((df["Glucose"] >= 70) & (df["Glucose"] < 100)) & (df["Age"] >= 50), "NEW_AGE_GLUCOSE_NOM"] = "normalsenior"
+df.loc[((df["Glucose"] >= 100) & (df["Glucose"] <= 125)) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_GLUCOSE_NOM"] = "hiddenmature"
+df.loc[((df["Glucose"] >= 100) & (df["Glucose"] <= 125)) & (df["Age"] >= 50), "NEW_AGE_GLUCOSE_NOM"] = "hiddensenior"
+df.loc[(df["Glucose"] > 125) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_GLUCOSE_NOM"] = "highmature"
+df.loc[(df["Glucose"] > 125) & (df["Age"] >= 50), "NEW_AGE_GLUCOSE_NOM"] = "highsenior"
+
+# Yaş ve Kan Basıncı değerlerini bir arada düşünerek kategorik değişken oluşturma
+df.loc[(df["BloodPressure"] < 60) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BloodPressure_NOM"] = "lowmature"
+df.loc[(df["BloodPressure"] < 60) & (df["Age"] >= 50), "NEW_AGE_BloodPressure_NOM"] = "lowsenior"
+df.loc[((df["BloodPressure"] >= 60)  & (df["BloodPressure"] < 80)) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BloodPressure_NOM"] = "optimalmature"
+df.loc[((df["BloodPressure"] >= 60)  & (df["BloodPressure"] < 80)) & (df["Age"] >= 50), "NEW_AGE_BloodPressure_NOM"] = "optimalsenior"
+df.loc[((df["BloodPressure"] >= 80) & (df["BloodPressure"] < 90)) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BloodPressure_NOM"] = "normalmature"
+df.loc[((df["BloodPressure"] >= 80) & (df["BloodPressure"] < 90)) & (df["Age"] >= 50), "NEW_AGE_BloodPressure_NOM"] = "normalsenior"
+df.loc[((df["BloodPressure"] >= 90) & (df["BloodPressure"] < 110)) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BloodPressure_NOM"] = "highmature"
+df.loc[((df["BloodPressure"] >= 90) & (df["BloodPressure"] < 110)) & (df["Age"] >= 50), "NEW_AGE_BloodPressure_NOM"] = "highsenior"
+df.loc[(df["BloodPressure"]  > 110) & ((df["Age"] >= 21) & (df["Age"] < 50)), "NEW_AGE_BloodPressure_NOM"] = "very_highmature"
+df.loc[(df["BloodPressure"]  > 110) & (df["Age"] >= 50), "NEW_AGE_BloodPressure_NOM"] = "very_highsenior"
+
+df["NEW_GLUCOSE*INSULIN"] = df["Glucose"] * df["Insulin"]
+
 
 df.head()
 
@@ -304,6 +326,7 @@ cat_cols, num_cols, cat_but_car = grab_col_names(df)
 
 # Yeni değişkenler geldiği için tekrardan rare analyser yapmalıyız ;
 rare_analyser(df,"Outcome", cat_cols)
+df = rare_encoder(df, 0.01)
 
 # Gereksiz, kullanışsız değişken var mı diye baktık. Eğer varsa ya rare yapacaktık ya da silecektik. Ama burada yok.
 useless_cols = [col for col in df.columns if df[col].nunique() == 2 and (df[col].value_counts() / len(df) < 0.01).any(axis=None) ]
@@ -311,10 +334,13 @@ useless_cols = [col for col in df.columns if df[col].nunique() == 2 and (df[col]
 #################################################
 #################################################
 
+
 # Numerik değişkenleri Standartlaştırıyoruz ;
 scaler = StandardScaler()
 df[num_cols]  = scaler.fit_transform(df[num_cols])
 df[num_cols].head()
+
+df["NEW_GLUCOSE*INSULIN"]  = scaler.fit_transform(df["NEW_GLUCOSE*INSULIN"])
 
 #################################################
 #################################################
@@ -328,20 +354,27 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30)
 
 rf_model = RandomForestClassifier(random_state=46).fit(X_train, y_train)
 y_pred = rf_model.predict(X_test)
-accuracy_score(y_pred, y_test)
-# accuracy score : 0.835
+
+print(f"Accuracy: {round(accuracy_score(y_pred, y_test), 2)}") # 0.77 -- 0.82
+print(f"Recall: {round(recall_score(y_pred,y_test),3)}") # 0.67 -- 0.754
+print(f"Precision: {round(precision_score(y_pred,y_test), 2)}") # 0.65 -- 0.68
+print(f"F1: {round(f1_score(y_pred,y_test), 2)}") # 0.66 -- 0.71
+print(f"Auc: {round(roc_auc_score(y_pred,y_test), 2)}") # 0.75 -- 0.80
 
 
 # Hiçbir şey yapmasaydık accuracy score kaç çıkacaktı ?
-
 df2 = pd.read_csv("datasets/diabetes.csv")
 y2 = df2["Outcome"]
 X2 = df2.drop("Outcome", axis=1)
 X_train2, X_test2, y_train2, y_test2 = train_test_split(X2, y2, test_size=0.30)
 rf_model2 = RandomForestClassifier(random_state=46).fit(X_train2, y_train2)
 y_pred2 = rf_model2.predict(X_test2)
-accuracy_score(y_pred2, y_test2)
-# accuracy score : 0.740
+
+print(f"Accuracy: {round(accuracy_score(y_pred2, y_test2), 2)}") # 0.76
+print(f"Recall: {round(recall_score(y_pred2,y_test2),3)}") # 0.759
+print(f"Precision: {round(precision_score(y_pred2,y_test2), 2)}") # 0.49
+print(f"F1: {round(f1_score(y_pred2,y_test2), 2)}") # 0.59
+print(f"Auc: {round(roc_auc_score(y_pred2,y_test2), 2)}") # 0.76
 
 
 # Yeni türettiğimiz değişkenlerin önem ve işe yarama oranını grafikle inceleyelim ;
